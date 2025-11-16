@@ -2,6 +2,9 @@ package auth
 
 import (
 	"testing"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 func TestCheckPasswordHash(t *testing.T) {
@@ -63,5 +66,42 @@ func TestCheckPasswordHash(t *testing.T) {
 		if ok != c.expected {
 			t.Errorf("CheckPasswordHash(%s, %s) == %t", c.input.password, c.input.hash, ok)
 		}
+	}
+}
+
+func TestMakeAndValidateJWT_Success(t *testing.T) {
+	userID := uuid.New()
+	secret := "secret"
+	tok, err := MakeJWT(userID, secret, time.Hour)
+
+	if err != nil || tok == "" {
+		t.Fatalf("expected token, got err=%v tok=%q", err, tok)
+	}
+	gotID, err := ValidateJWT(tok, secret)
+	if err != nil {
+		t.Fatalf("validate err: %v", err)
+	}
+	if gotID != userID {
+		t.Fatalf("want %v, got %v", userID, gotID)
+	}
+}
+
+func TestMakeAndValidateJWT_ExpiredToken(t *testing.T) {
+	userID := uuid.New()
+	secret := "secret"
+	tok, _ := MakeJWT(userID, secret, -time.Minute)
+
+	if _, err := ValidateJWT(tok, secret); err == nil {
+		t.Fatalf("expected error for expired token")
+	}
+}
+
+func TestMakeAndValidateJWT_WrongSecret(t *testing.T) {
+	userID := uuid.New()
+	secret := "secret"
+	tok, _ := MakeJWT(userID, secret, time.Hour)
+
+	if _, err := ValidateJWT(tok, "wrong"); err == nil {
+		t.Fatalf("expected error for wrong secret")
 	}
 }
