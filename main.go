@@ -18,6 +18,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
+const expirationDays = 60
+
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	dbQueries      *database.Queries
@@ -26,11 +28,12 @@ type apiConfig struct {
 }
 
 type User struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-	Token     string    `json:"token"`
+	ID           uuid.UUID `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Email        string    `json:"email"`
+	Token        string    `json:"token"`
+	RefreshToken string    `json:"refresh_token"`
 }
 
 type Chirp struct {
@@ -281,12 +284,25 @@ func (apiCfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, msg, err)
 	}
 
+	refreshTok, _ := auth.MakeRefreshToken()
+
+	expirationDate := time.Now().AddDate(0, 0, expirationDays)
+
+	refreshTokenParams := database.CreateRefreshTokenParams{Token: refreshTok, UserID: user.ID, ExpiresAt: expirationDate, RevokedAt: sql.NullTime{}}
+
+	dbRefreshToken, err := apiCfg.dbQueries.CreateRefreshToken(r.Context(), refreshTokenParams)
+	if err != nil {
+		msg := "Could not create refresh token"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+	}
+
 	resp := User{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
-		Token:     tok,
+		ID:           user.ID,
+		CreatedAt:    user.CreatedAt,
+		UpdatedAt:    user.UpdatedAt,
+		Email:        user.Email,
+		Token:        tok,
+		RefreshToken: dbRefreshToken.Token,
 	}
 
 	respondWithJSON(w, http.StatusOK, resp)
