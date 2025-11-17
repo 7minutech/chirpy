@@ -135,6 +135,20 @@ func TestGetBearerToken_MissingHeader(t *testing.T) {
 	}
 }
 
+func TestGetBearerToken_MissingBearer(t *testing.T) {
+
+	tok, _ := MakeJWT(uuid.New(), "secret", time.Hour)
+
+	header := http.Header{}
+	http.Header.Add(header, "Authorization", tok)
+
+	tokenString, err := GetBearerToken(header)
+
+	if err == nil || tokenString != "" {
+		t.Fatalf("expected err, got err=%v tok=%q", err, tokenString)
+	}
+}
+
 func TestGetBearerToken_WhiteSpace(t *testing.T) {
 	tok, _ := MakeJWT(uuid.New(), "secret", time.Hour)
 
