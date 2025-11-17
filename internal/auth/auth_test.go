@@ -111,7 +111,7 @@ func TestGetBearerToken_Success(t *testing.T) {
 	tok, _ := MakeJWT(uuid.New(), "secret", time.Hour)
 
 	header := http.Header{}
-	http.Header.Add(header, "Bearer", tok)
+	http.Header.Add(header, "Authorization", "Bearer "+tok)
 
 	tokenString, err := GetBearerToken(header)
 
@@ -141,7 +141,7 @@ func TestGetBearerToken_WhiteSpace(t *testing.T) {
 	spacedTok := "  " + tok + "  "
 
 	header := http.Header{}
-	http.Header.Add(header, "Bearer", spacedTok)
+	http.Header.Add(header, "Authorization", "Bearer "+spacedTok)
 
 	tokenString, err := GetBearerToken(header)
 

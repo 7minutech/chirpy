@@ -11,6 +11,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const tokenStart = "Bearer "
+
 func HashPassword(password string) (string, error) {
 	hashedPass, err := argon2id.CreateHash(password, argon2id.DefaultParams)
 	if err != nil {
@@ -64,12 +66,21 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 }
 
 func GetBearerToken(headers http.Header) (string, error) {
-	tok := headers.Get("Bearer")
+	value := headers.Get("Authorization")
 
-	if tok == "" {
-		return "", fmt.Errorf("header does not contain Bearer field")
+	if value == "" {
+		return "", fmt.Errorf("header does not contain Authorization field")
 	}
 
+	if len(value) < len(tokenStart) {
+		return "", fmt.Errorf("header Authorization field value must be at least length of 7")
+	}
+
+	if value[0:len(tokenStart)] != tokenStart {
+		return "", fmt.Errorf("header Authorization field value missing Bearer")
+	}
+
+	tok := value[len(tokenStart):]
 	tok = strings.Trim(tok, " ")
 
 	return tok, nil
