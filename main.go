@@ -130,9 +130,22 @@ func (apiCfg *apiConfig) handerUser(w http.ResponseWriter, r *http.Request) {
 
 func (apiCfg *apiConfig) handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 
+	tok, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		msg := "token was not given in headers"
+		respondWithError(w, http.StatusBadRequest, msg, err)
+		return
+	}
+
+	userID, err := auth.ValidateJWT(tok, apiCfg.secret)
+	if err != nil {
+		msg := "token was not valid"
+		respondWithError(w, http.StatusUnauthorized, msg, err)
+		return
+	}
+
 	type parameters struct {
-		Body   string    `json:"body"`
-		UserID uuid.UUID `json:"user_id"`
+		Body string `json:"body"`
 	}
 
 	const maxChirpLength int = 140
@@ -155,7 +168,7 @@ func (apiCfg *apiConfig) handlerValidateChirp(w http.ResponseWriter, r *http.Req
 
 	chirpyParams := database.CreateChirpParams{
 		Body:   cleanedBody,
-		UserID: params.UserID,
+		UserID: userID,
 	}
 
 	chirp, err := apiCfg.dbQueries.CreateChirp(r.Context(), chirpyParams)
