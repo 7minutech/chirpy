@@ -239,9 +239,8 @@ func (apiCfg *apiConfig) handlerGetChirp(w http.ResponseWriter, r *http.Request)
 func (apiCfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 
 	type parameters struct {
-		Password         string `json:"password"`
-		Email            string `json:"email"`
-		ExpiresInSeconds int    `json:"expires_in_seconds"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 
 	var params = parameters{}
@@ -275,10 +274,7 @@ func (apiCfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	experationSeconds := setExperation(params.ExpiresInSeconds)
-	experationDuration := time.Second * time.Duration(experationSeconds)
-
-	tok, err := auth.MakeJWT(user.ID, apiCfg.secret, experationDuration)
+	tok, err := auth.MakeJWT(user.ID, apiCfg.secret, time.Hour)
 	if err != nil {
 		msg := "could not create JWT"
 		respondWithError(w, http.StatusInternalServerError, msg, err)
