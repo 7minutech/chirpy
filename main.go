@@ -44,6 +44,10 @@ type Chirp struct {
 	UserID    uuid.UUID `json:"user_id"`
 }
 
+type JWT struct {
+	Token string `json:"token"`
+}
+
 func (apiCfg *apiConfig) handlerMetric(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
@@ -304,6 +308,55 @@ func (apiCfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, resp)
 }
 
+func (apiCfg *apiConfig) handlerRefresh(w http.ResponseWriter, r *http.Request) {
+
+	refreshTok, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		msg := "Couldn't get refresh token from header"
+		respondWithError(w, http.StatusBadRequest, msg, err)
+		return
+	}
+
+	dbRefreshTok, err := apiCfg.dbQueries.GetRefreshToken(r.Context(), refreshTok)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		msg := "refresh token does not exist"
+		respondWithError(w, http.StatusUnauthorized, msg, err)
+		return
+	}
+
+	if err != nil {
+		msg := "Couldn't get refresh token"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+		return
+	}
+
+	if dbRefreshTok.RevokedAt.Valid {
+		msg := "refresh token is expired"
+		respondWithError(w, http.StatusUnauthorized, msg, err)
+		return
+	}
+
+	user, err := apiCfg.dbQueries.GetUserByRefreshToken(r.Context(), dbRefreshTok.Token)
+	if err != nil {
+		msg := "couldn't get user by refresh token"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+		return
+	}
+
+	tok, err := auth.MakeJWT(user.ID, apiCfg.secret, time.Hour)
+	if err != nil {
+		msg := "could not create JWT"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+		return
+	}
+
+	resp := JWT{Token: tok}
+
+	respondWithJSON(w, http.StatusOK, resp)
+
+}
+
 func main() {
 	godotenv.Load(".env")
 
@@ -340,6 +393,7 @@ func main() {
 	mux.HandleFunc("POST /api/chirps", apiCfg.handlerValidateChirp)
 	mux.HandleFunc("POST /api/users", apiCfg.handerUser)
 	mux.HandleFunc("POST /api/login", apiCfg.handlerLogin)
+	mux.HandleFunc("POST /api/refresh", apiCfg.handlerRefresh)
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
