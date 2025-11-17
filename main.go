@@ -30,6 +30,7 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
+	Token     string    `json:"token"`
 }
 
 type Chirp struct {
@@ -262,12 +263,17 @@ func (apiCfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	experationDuration := time.Second * time.Duration(experationSeconds)
 
 	tok, err := auth.MakeJWT(user.ID, apiCfg.secret, experationDuration)
+	if err != nil {
+		msg := "could not create JWT"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+	}
 
 	resp := User{
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
+		Token:     tok,
 	}
 
 	respondWithJSON(w, http.StatusOK, resp)
