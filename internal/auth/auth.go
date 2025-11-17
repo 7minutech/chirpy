@@ -2,6 +2,8 @@ package auth
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/alexedwards/argon2id"
@@ -59,4 +61,16 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 	}
 	return id, nil
 
+}
+
+func GetBearerToken(headers http.Header) (string, error) {
+	tok := headers.Get("Bearer")
+
+	if tok == "" {
+		return "", fmt.Errorf("header does not contain Bearer field")
+	}
+
+	tok = strings.Trim(tok, " ")
+
+	return tok, nil
 }

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
@@ -103,5 +104,52 @@ func TestMakeAndValidateJWT_WrongSecret(t *testing.T) {
 
 	if _, err := ValidateJWT(tok, "wrong"); err == nil {
 		t.Fatalf("expected error for wrong secret")
+	}
+}
+
+func TestGetBearerToken_Success(t *testing.T) {
+	tok, _ := MakeJWT(uuid.New(), "secret", time.Hour)
+
+	header := http.Header{}
+	http.Header.Add(header, "Bearer", tok)
+
+	tokenString, err := GetBearerToken(header)
+
+	if err != nil {
+		t.Fatalf("expected token, got err=%v tok=%q", err, tokenString)
+	}
+
+	if tokenString != tok {
+		t.Fatalf("expected token=\"%s\", got tok=\"%s\"", tok, tokenString)
+	}
+}
+
+func TestGetBearerToken_MissingHeader(t *testing.T) {
+
+	header := http.Header{}
+
+	tokenString, err := GetBearerToken(header)
+
+	if err == nil || tokenString != "" {
+		t.Fatalf("expected err, got err=%v tok=%q", err, tokenString)
+	}
+}
+
+func TestGetBearerToken_WhiteSpace(t *testing.T) {
+	tok, _ := MakeJWT(uuid.New(), "secret", time.Hour)
+
+	spacedTok := "  " + tok + "  "
+
+	header := http.Header{}
+	http.Header.Add(header, "Bearer", spacedTok)
+
+	tokenString, err := GetBearerToken(header)
+
+	if err != nil {
+		t.Fatalf("expected token, got err=%v tok=%q", err, tokenString)
+	}
+
+	if tokenString != tok {
+		t.Fatalf("expected token=\"%s\", got tok=\"%s\"", tok, tokenString)
 	}
 }
