@@ -357,6 +357,45 @@ func (apiCfg *apiConfig) handlerRefresh(w http.ResponseWriter, r *http.Request) 
 
 }
 
+func (apiCfg *apiConfig) handlerRevoke(w http.ResponseWriter, r *http.Request) {
+
+	refreshTok, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		msg := "Couldn't get refresh token from header"
+		respondWithError(w, http.StatusBadRequest, msg, err)
+		return
+	}
+
+	dbRefreshTok, err := apiCfg.dbQueries.GetRefreshToken(r.Context(), refreshTok)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		msg := "refresh token does not exist"
+		respondWithError(w, http.StatusUnauthorized, msg, err)
+		return
+	}
+
+	if err != nil {
+		msg := "Couldn't get refresh token"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+		return
+	}
+
+	if dbRefreshTok.RevokedAt.Valid {
+		respondWithJSON(w, http.StatusNoContent, nil)
+		return
+	}
+
+	err = apiCfg.dbQueries.UpdateRefreshToken(r.Context(), dbRefreshTok.Token)
+	if err != nil {
+		msg := "Couldn't update refresh token"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusNoContent, nil)
+
+}
+
 func main() {
 	godotenv.Load(".env")
 
@@ -394,6 +433,7 @@ func main() {
 	mux.HandleFunc("POST /api/users", apiCfg.handerUser)
 	mux.HandleFunc("POST /api/login", apiCfg.handlerLogin)
 	mux.HandleFunc("POST /api/refresh", apiCfg.handlerRefresh)
+	mux.HandleFunc("POST /api/revoke", apiCfg.handlerRevoke)
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
