@@ -258,6 +258,11 @@ func (apiCfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	experationSeconds := setExperation(params.ExpiresInSeconds)
+	experationDuration := time.Second * time.Duration(experationSeconds)
+
+	tok, err := auth.MakeJWT(user.ID, apiCfg.secret, experationDuration)
+
 	resp := User{
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
