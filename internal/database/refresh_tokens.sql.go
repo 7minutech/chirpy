@@ -70,3 +70,15 @@ func (q *Queries) GetRefreshToken(ctx context.Context, token string) (RefreshTok
 	)
 	return i, err
 }
+
+const updateRefreshToken = `-- name: UpdateRefreshToken :exec
+UPDATE refresh_tokens
+SET updated_at = NOw(),
+    revoked_at = NOW()
+WHERE token = $1
+`
+
+func (q *Queries) UpdateRefreshToken(ctx context.Context, token string) error {
+	_, err := q.db.ExecContext(ctx, updateRefreshToken, token)
+	return err
+}
