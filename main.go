@@ -135,6 +135,67 @@ func (apiCfg *apiConfig) handerUser(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, resp)
 }
 
+func (apiCfg *apiConfig) handlerUpdateUser(w http.ResponseWriter, r *http.Request) {
+
+	type parameters struct {
+		Password string `json:"password"`
+		Email    string `json:"email"`
+	}
+
+	var params = parameters{}
+
+	defer r.Body.Close()
+
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		msg := "could not decode request body"
+		respondWithError(w, http.StatusBadRequest, msg, err)
+		return
+	}
+
+	hashedPassword, err := auth.HashPassword(params.Password)
+	if err != nil {
+		msg := "could not hash password"
+		respondWithError(w, http.StatusBadRequest, msg, err)
+		return
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		msg := "could not get token"
+		respondWithError(w, http.StatusUnauthorized, msg, err)
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, apiCfg.secret)
+	if err != nil {
+		msg := "could not validate token"
+		respondWithError(w, http.StatusUnauthorized, msg, err)
+		return
+	}
+
+	userParams := database.UpdateUserParams{
+		Email:          params.Email,
+		HashedPassword: hashedPassword,
+		ID:             userID,
+	}
+
+	user, err := apiCfg.dbQueries.UpdateUser(r.Context(), userParams)
+	if err != nil {
+		msg := "could not update user"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+		return
+	}
+
+	resp := User{
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+		Email:     user.Email,
+	}
+
+	respondWithJSON(w, http.StatusOK, resp)
+}
+
 func (apiCfg *apiConfig) handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 
 	tok, err := auth.GetBearerToken(r.Header)
@@ -434,6 +495,7 @@ func main() {
 	mux.HandleFunc("POST /api/login", apiCfg.handlerLogin)
 	mux.HandleFunc("POST /api/refresh", apiCfg.handlerRefresh)
 	mux.HandleFunc("POST /api/revoke", apiCfg.handlerRevoke)
+	mux.HandleFunc("PUT /api/users", apiCfg.handlerUpdateUser)
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
