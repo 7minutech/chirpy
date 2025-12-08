@@ -3,6 +3,7 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -94,4 +95,20 @@ func MakeRefreshToken() (string, error) {
 	tok := hex.EncodeToString(key)
 
 	return tok, nil
+}
+
+func GetAPIKey(headers http.Header) (string, error) {
+	apikey := headers.Get("Authorization")
+
+	if apikey == "" {
+		return "", errors.New("error: missing Authorization key in header")
+	}
+
+	apiKeyPrefix := "ApiKey"
+
+	apikey = apikey[len(apiKeyPrefix):]
+
+	apikey = strings.Trim(apikey, " ")
+
+	return apikey, nil
 }
