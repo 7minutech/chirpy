@@ -34,7 +34,7 @@ type User struct {
 	Email        string    `json:"email"`
 	Token        string    `json:"token"`
 	RefreshToken string    `json:"refresh_token"`
-	Red          bool      `json:"is_chripy_red"`
+	Red          bool      `json:"is_chirpy_red"`
 }
 
 type Chirp struct {
