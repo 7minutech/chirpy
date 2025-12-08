@@ -34,6 +34,7 @@ type User struct {
 	Email        string    `json:"email"`
 	Token        string    `json:"token"`
 	RefreshToken string    `json:"refresh_token"`
+	Red          bool      `json:"is_chripy_red"`
 }
 
 type Chirp struct {
@@ -130,6 +131,7 @@ func (apiCfg *apiConfig) handerUser(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
+		Red:       user.IsChirpyRed,
 	}
 
 	respondWithJSON(w, http.StatusCreated, resp)
@@ -191,6 +193,7 @@ func (apiCfg *apiConfig) handlerUpdateUser(w http.ResponseWriter, r *http.Reques
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
+		Red:       user.IsChirpyRed,
 	}
 
 	respondWithJSON(w, http.StatusOK, resp)
@@ -422,6 +425,7 @@ func (apiCfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:    user.CreatedAt,
 		UpdatedAt:    user.UpdatedAt,
 		Email:        user.Email,
+		Red:          user.IsChirpyRed,
 		Token:        tok,
 		RefreshToken: dbRefreshToken.Token,
 	}
