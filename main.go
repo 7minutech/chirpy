@@ -549,7 +549,18 @@ func (apiCfg *apiConfig) handlerPolkaWebhook(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	_, err := apiCfg.dbQueries.UpgradeUser(r.Context(), params.Data.ID)
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		msg := "missing header"
+		respondWithError(w, http.StatusUnauthorized, msg, err)
+	}
+
+	if apiKey != apiCfg.polkaKey {
+		msg := "invalid api key"
+		respondWithJSON(w, http.StatusUnauthorized, msg)
+	}
+
+	_, err = apiCfg.dbQueries.UpgradeUser(r.Context(), params.Data.ID)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		msg := "could not find user"
