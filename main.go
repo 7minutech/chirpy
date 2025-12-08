@@ -517,6 +517,51 @@ func (apiCfg *apiConfig) handlerRevoke(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (apiCfg *apiConfig) handlerPolkaWebhook(w http.ResponseWriter, r *http.Request) {
+
+	type userData struct {
+		ID uuid.UUID `json:"user_id"`
+	}
+
+	type parameters struct {
+		Event string   `json:"event"`
+		Data  userData `json:"data"`
+	}
+
+	defer r.Body.Close()
+
+	var params parameters
+
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		msg := "could not decode requeset body"
+		respondWithError(w, http.StatusBadRequest, msg, err)
+		return
+	}
+
+	if params.Event != "user.upgraded" {
+		msg := "event was not upgrade event"
+		respondWithJSON(w, http.StatusNoContent, msg)
+		return
+	}
+
+	_, err := apiCfg.dbQueries.UpgradeUser(r.Context(), params.Data.ID)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		msg := "could not find user"
+		respondWithError(w, http.StatusNotFound, msg, err)
+		return
+	}
+
+	if err != nil {
+		msg := "could not upgrade user"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusNoContent, nil)
+
+}
+
 func main() {
 	godotenv.Load(".env")
 
@@ -557,6 +602,7 @@ func main() {
 	mux.HandleFunc("POST /api/refresh", apiCfg.handlerRefresh)
 	mux.HandleFunc("POST /api/revoke", apiCfg.handlerRevoke)
 	mux.HandleFunc("PUT /api/users", apiCfg.handlerUpdateUser)
+	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.handlerPolkaWebhook)
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
