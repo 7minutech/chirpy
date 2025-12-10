@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"sync/atomic"
 	"time"
 
@@ -319,11 +320,7 @@ func (apiCfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request
 
 	authorStrID := r.URL.Query().Get("author_id")
 
-	log.Printf("author_id given was %s", authorStrID)
-
 	if authorStrID != "" {
-
-		log.Printf("author was found: %s", authorStrID)
 
 		authorID, err := uuid.Parse(authorStrID)
 		if err != nil {
@@ -355,6 +352,12 @@ func (apiCfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request
 	}
 
 	chirps := mapChirp(dbChirps)
+
+	sortQuery := r.URL.Query().Get("sort")
+
+	if sortQuery == "desc" {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[i].CreatedAt.After(chirps[j].CreatedAt) })
+	}
 
 	respondWithJSON(w, http.StatusOK, chirps)
 }
