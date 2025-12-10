@@ -12,8 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/7minutech/chripy/internal/auth"
-	"github.com/7minutech/chripy/internal/database"
+	"github.com/7minutech/chirpy/internal/auth"
+	"github.com/7minutech/chirpy/internal/database"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"

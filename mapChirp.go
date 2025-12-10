@@ -1,6 +1,6 @@
 package main
 
-import "github.com/7minutech/chripy/internal/database"
+import "github.com/7minutech/chirpy/internal/database"
 
 func mapChirp(dbChirps []database.Chirp) []Chirp {
 	var chirps = make([]Chirp, len(dbChirps))
