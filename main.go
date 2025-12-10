@@ -319,12 +319,17 @@ func (apiCfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request
 
 	authorStrID := r.URL.Query().Get("author_id")
 
+	log.Printf("author_id given was %s", authorStrID)
+
 	if authorStrID != "" {
+
+		log.Printf("author was found: %s", authorStrID)
 
 		authorID, err := uuid.Parse(authorStrID)
 		if err != nil {
 			msg := "could not parse author id"
 			respondWithError(w, http.StatusBadRequest, msg, err)
+			return
 		}
 
 		dbChirps, err := apiCfg.dbQueries.GetChripsByAuthor(r.Context(), authorID)
@@ -332,11 +337,13 @@ func (apiCfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request
 		if err != nil {
 			msg := "could not select all chirps for author"
 			respondWithError(w, http.StatusInternalServerError, msg, err)
+			return
 		}
 
 		chirps := mapChirp(dbChirps)
 
 		respondWithJSON(w, http.StatusOK, chirps)
+		return
 
 	}
 
