@@ -317,6 +317,29 @@ func (apiCfg *apiConfig) hanlderDeleteChirp(w http.ResponseWriter, r *http.Reque
 
 func (apiCfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 
+	authorStrID := r.URL.Query().Get("author_id")
+
+	if authorStrID != "" {
+
+		authorID, err := uuid.Parse(authorStrID)
+		if err != nil {
+			msg := "could not parse author id"
+			respondWithError(w, http.StatusBadRequest, msg, err)
+		}
+
+		dbChirps, err := apiCfg.dbQueries.GetChripsByAuthor(r.Context(), authorID)
+
+		if err != nil {
+			msg := "could not select all chirps for author"
+			respondWithError(w, http.StatusInternalServerError, msg, err)
+		}
+
+		chirps := mapChirp(dbChirps)
+
+		respondWithJSON(w, http.StatusOK, chirps)
+
+	}
+
 	dbChirps, err := apiCfg.dbQueries.GetChirps(r.Context())
 
 	if err != nil {
