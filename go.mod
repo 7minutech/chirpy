@@ -1,4 +1,4 @@
-module github.com/7minutech/chripy
+module github.com/7minutech/chirpy
 
 go 1.25.1
 
