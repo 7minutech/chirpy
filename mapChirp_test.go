@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/7minutech/chripy/internal/database"
+	"github.com/7minutech/chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
